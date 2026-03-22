@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.angular/
+.DS_Store
+price-service/data.json
+price-service/node_modules/
+frontend/node_modules/
+frontend/dist/
+frontend/.angular/
