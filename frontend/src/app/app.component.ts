@@ -1,8 +1,11 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { trigger, transition, style, animate } from '@angular/animations';
 import { InversionService } from './services/inversion.service';
 import { Inversion, ReporteGanancias } from './models/inversion.model';
+
+declare var Chart: any;
 
 interface Cedear {
   simbolo: string;
@@ -36,68 +39,81 @@ interface Cripto {
   selector: 'app-root',
   standalone: true,
   imports: [CommonModule, FormsModule],
+  animations: [
+    trigger('fadeInOut', [
+      transition(':enter', [
+        style({ opacity: 0, transform: 'scale(0.96)', position: 'fixed', top: 0, left: 0, width: '100%', zIndex: 1 }),
+        animate('0.6s cubic-bezier(0.4, 0, 0.2, 1)', style({ opacity: 1, transform: 'scale(1)' }))
+      ]),
+      transition(':leave', [
+        style({ position: 'fixed', top: 0, left: 0, width: '100%', zIndex: 2 }),
+        animate('0.5s cubic-bezier(0.4, 0, 0.2, 1)', style({ opacity: 0, transform: 'scale(1.04)' }))
+      ])
+    ])
+  ],
   template: `
-    <div class="landing" *ngIf="!mostrarApp">
+    <div class="landing" *ngIf="!mostrarApp" [@fadeInOut]>
+      <div class="landing-bg"></div>
+      
       <div class="landing-content">
-        <div class="logo-container">
-          <div class="logo-icon">📈</div>
+        <div class="logo-icon">
+          <svg class="bitcoin-anim" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+            <circle cx="16" cy="16" r="16" fill="#f7931a"/>
+            <path fill="#fff" d="M21.78 15.37c.39-2.58-1.55-3.96-4.14-4.85l.84-3.38-2.06-.51-.82 3.3c-.54-.13-1.09-.26-1.63-.39l.82-3.32-2.06-.51-.83 3.36c-.45-.11-.88-.22-1.31-.34l.01-.06-2.85-.71-.55 2.21s1.53.35 1.5.38c.84.21.99.76.96 1.19l-1.93 7.74c-.05.11-.16.29-.41.22.03.03-1.53-.38-1.53-.38l-1.04 2.42 2.68.67c.5.12 1.01.26 1.51.38l-.84 3.39 2.06.51.83-3.34c.56.15 1.1.28 1.63.4l-.83 3.33 2.06.52.85-3.41c2.94.57 5.15.34 6.07-2.31.74-2.14-.02-3.38-1.57-4.18 1.12-.26 1.96-.99 2.14-2.52zm-3.8 5.4c-.62 2.48-4.79 1.14-6.14.81l1.09-4.38c1.35.34 5.71.95 5.05 3.57zm.62-6.38c-.56 2.26-4.04 1.08-5.16.8l.98-3.94c1.13.28 4.79.76 4.18 3.14z"/>
+          </svg>
         </div>
-        <h1 class="landing-title">Bienvenido</h1>
-        <p class="landing-subtitle">Gestiona tus inversiones de forma inteligente</p>
+        <h1 class="landing-title">
+          Inversiones. <br>
+          Refinadas.
+        </h1>
+        <p class="landing-subtitle">Tu portafolio, reimaginado.</p>
+        
         <p class="landing-description">
-          Registra tus compras, controla precios actuales y calcula 
-          tus ganancias o pérdidas en tiempo real.
+          Monitoriza tus activos con la precisión y elegancia del diseño industrial. 
+          Real-time insights. Cero distracciones.
         </p>
+        
         <button class="btn-start" (click)="iniciarApp()">
-          <span class="btn-text">Comenzar</span>
-          <span class="btn-arrow">→</span>
+          Entrar al Dash
         </button>
-        <div class="features">
-          <div class="feature">
-            <span class="feature-icon">💰</span>
-            <span>Control de inversiones</span>
-          </div>
-          <div class="feature">
-            <span class="feature-icon">📊</span>
-            <span>Análisis de ganancias</span>
-          </div>
-          <div class="feature">
-            <span class="feature-icon">📱</span>
-            <span>Fácil de usar</span>
-          </div>
-        </div>
-      </div>
-      <div class="landing-bg">
-        <div class="floating-shape shape1"></div>
-        <div class="floating-shape shape2"></div>
-        <div class="floating-shape shape3"></div>
       </div>
     </div>
 
-    <div class="app-container" *ngIf="mostrarApp">
-      <div class="container">
-        <div class="app-header">
-          <h1>📈 Gestor de Inversiones</h1>
+    <div class="app-container" *ngIf="mostrarApp" [@fadeInOut]>
+      <div class="app-header">
+        <div class="container d-flex justify-content-between align-items-center">
+          <h1 (click)="mostrarApp = false" style="cursor: pointer;">Asset Manager</h1>
+          <div class="header-meta text-muted small">
+            DOLAR BLUE: {{ tipoCambioUSD }}
+          </div>
         </div>
+      </div>
 
+      <div class="container">
         <div class="nav-tabs-custom">
           <button 
             class="nav-tab" 
             [class.active]="tabActiva === 'inversiones'"
-            (click)="tabActiva = 'inversiones'">
-            💼 Mis Inversiones
+            (click)="setTab('inversiones')">
+            Portafolio.
+          </button>
+          <button 
+            class="nav-tab" 
+            [class.active]="tabActiva === 'resumen'"
+            (click)="setTab('resumen')">
+            Resumen.
           </button>
           <button 
             class="nav-tab" 
             [class.active]="tabActiva === 'cedears'"
-            (click)="tabActiva = 'cedears'">
-            🏛️ CEDEARs Argentinos
+            (click)="setTab('cedears')">
+            Tickers.
           </button>
           <button 
             class="nav-tab" 
             [class.active]="tabActiva === 'cripto'"
-            (click)="tabActiva = 'cripto'">
-            ₿ Criptomonedas
+            (click)="setTab('cripto')">
+            Crypto.
           </button>
         </div>
 
@@ -242,44 +258,66 @@ interface Cripto {
               </div>
             </div>
           </div>
+        </div>
 
-          <div class="card" *ngIf="inversiones.length > 0">
+        <div *ngIf="tabActiva === 'resumen'">
+          <div class="card staggered-reveal" *ngIf="inversiones.length > 0">
             <div class="card-header">
-              <h5>📊 Resumen General de Cartera</h5>
+              <h5>Dashboard.</h5>
             </div>
             <div class="card-body">
-              <div class="row text-center">
-                <div class="col-md-4 mb-3">
-                  <p class="mb-1 text-white-50">Total Invertido (ARS)</p>
-                  <p class="resumen-valor text-white">{{ totalInvertido | currency }}</p>
+              <div class="row">
+                <div class="col-md-4 mb-4">
+                  <p class="resumen-label">Total Invertido</p>
+                  <p class="resumen-valor">{{ totalInvertido | currency }}</p>
                 </div>
-                <div class="col-md-4 mb-3">
-                  <p class="mb-1 text-white-50">Valor Actual (ARS)</p>
-                  <p class="resumen-valor text-white">{{ valorActualTotal | currency }}</p>
+                <div class="col-md-4 mb-4">
+                  <p class="resumen-label">Valor Actual</p>
+                  <p class="resumen-valor">{{ valorActualTotal | currency }}</p>
                 </div>
-                <div class="col-md-4 mb-3">
-                  <p class="mb-1 text-white-50">Valor Total en USD</p>
-                  <p class="resumen-valor" style="color: #4ec9b0;">USD {{ totalUSD | number:'1.2-2' }}</p>
+                <div class="col-md-4 mb-4">
+                  <p class="resumen-label">Valuation (USD)</p>
+                  <p class="resumen-valor" style="color: var(--apple-blue);">USD {{ totalUSD | number:'1.2-2' }}</p>
                 </div>
               </div>
               
-              <hr class="border-secondary opacity-25">
+              <hr class="opacity-10">
               
-              <div class="row text-center mt-3">
-                <div class="col-md-6 mb-2">
-                  <p class="mb-1 text-white-50 font-weight-bold">📈 Ganancia / Pérdida en ARS</p>
+              <div class="row mt-4">
+                <div class="col-md-6 mb-3">
+                  <p class="resumen-label">Ganancia Neta ARS</p>
                   <p class="resumen-valor" [class.positivo]="gananciaPerdidaTotal >= 0" [class.negativo]="gananciaPerdidaTotal < 0">
-                    {{ gananciaPerdidaTotal | currency }}
+                    {{ (gananciaPerdidaTotal >= 0 ? '+' : '') }}{{ gananciaPerdidaTotal | currency }}
                   </p>
                 </div>
-                <div class="col-md-6 mb-2">
-                  <p class="mb-1 text-white-50 font-weight-bold">💹 Ganancia / Pérdida en USD</p>
+                <div class="col-md-6 mb-3">
+                  <p class="resumen-label">Profit Total USD</p>
                   <p class="resumen-valor" [class.positivo]="gananciaPerdidaTotal >= 0" [class.negativo]="gananciaPerdidaTotal < 0">
-                    USD {{ gananciaPerdidaUSD | number:'1.2-2' }}
+                    USD {{ (gananciaPerdidaTotal >= 0 ? '+' : '') }}{{ gananciaPerdidaUSD | number:'1.2-2' }}
                   </p>
                 </div>
               </div>
             </div>
+          </div>
+
+          <!-- GRÁFICO DE EVOLUCIÓN -->
+          <div class="card staggered-reveal" *ngIf="inversiones.length > 0">
+            <div class="card-header">
+              <h5>Evolución del Portafolio.</h5>
+            </div>
+            <div class="card-body">
+              <div style="height: 350px; width: 100%;">
+                <canvas id="evolucionChart"></canvas>
+              </div>
+              <p class="text-muted small mt-3 text-center">
+                Visualización acumulada por fecha de adquisición (Capital vs Capital+Profit).
+              </p>
+            </div>
+          </div>
+          
+          <div class="card text-center py-5 staggered-reveal" *ngIf="inversiones.length === 0">
+             <h4 class="text-muted">No hay datos para mostrar el Dashboard.</h4>
+             <p class="text-muted small">Agrega inversiones en la pestaña de Portafolio para ver tu rendimiento.</p>
           </div>
         </div>
 
@@ -351,8 +389,8 @@ interface Cripto {
                   </button>
                   <button 
                     class="filter-btn" 
-                    [class.active]="filtroCategoria === 'tecnologia'"
-                    (click)="filtroCategoria = 'tecnologia'; filtrarCedears()">
+                    [class.active]="filtroCategoria === 'tech'"
+                    (click)="filtroCategoria = 'tech'; filtrarCedears()">
                     Tech
                   </button>
                   <button 
@@ -383,24 +421,19 @@ interface Cripto {
               </div>
               
               <div class="cedear-grid">
-                <div *ngFor="let cedear of cedearsFiltrados" class="cedear-card">
-                  <div class="d-flex justify-content-between align-items-start mb-2">
-                    <div>
-                      <div class="cedear-symbol">{{ cedear.simbolo }}</div>
-                      <div class="cedear-name">{{ cedear.nombre }}</div>
-                      <span class="cedear-category">{{ cedear.categoria }}</span>
-                      <span *ngIf="cedear.personalizado" class="cedear-personalizado">Custom</span>
-                    </div>
-                    <span class="badge" [class.positivo]="cedear.variacion >= 0" [class.negativo]="cedear.variacion < 0">
+                <div *ngFor="let cedear of cedearsFiltrados; let i = index" class="cedear-card staggered-reveal" [style.animation-delay]="(i * 0.05) + 's'">
+                  <div class="cedear-symbol">{{ cedear.simbolo }}</div>
+                  <div class="cedear-name">{{ cedear.nombre }}</div>
+                  
+                  <div class="cedear-price">{{ cedear.precioARS | currency }}</div>
+                  <div class="text-muted small mb-3">
+                    <span [class.positivo]="cedear.variacion >= 0" [class.negativo]="cedear.variacion < 0">
                       {{ cedear.variacion >= 0 ? '+' : '' }}{{ cedear.variacion | number:'1.2-2' }}%
                     </span>
+                    • USD {{ (cedear.precioARS / tipoCambioUSD) | number:'1.2-2' }}
                   </div>
-                  <div class="cedear-price">ARS {{ cedear.precioARS | number:'1.2-2' }}</div>
-                  <div class="cedear-usd">USD {{ (cedear.precioARS / tipoCambioUSD) | number:'1.2-2' }}</div>
-                  <div class="text-muted small mt-1 mb-3">Actualizado: {{ cedear.ultimoUpdate }}</div>
-                  <button class="btn-comprar" (click)="comprarCedear(cedear)">
-                    🛒 Comprar
-                  </button>
+                  
+                  <button class="btn-comprar" (click)="comprarCedear(cedear)">Invertir</button>
                 </div>
               </div>
               
@@ -439,22 +472,19 @@ interface Cripto {
               </div>
               
               <div class="cedear-grid">
-                <div *ngFor="let cripto of criptosFiltrados" class="cedear-card">
-                  <div class="d-flex justify-content-between align-items-start mb-2">
-                    <div>
-                      <div class="cedear-symbol">{{ cripto.simbolo }}</div>
-                      <div class="cedear-name">{{ cripto.nombre }}</div>
-                    </div>
-                    <span class="badge" [class.positivo]="cripto.variacion24h >= 0" [class.negativo]="cripto.variacion24h < 0">
-                      {{ cripto.variacion24h >= 0 ? '+' : '' }}{{ cripto.variacion24h | number:'1.2-2' }}%
-                    </span>
-                  </div>
+                <div *ngFor="let cripto of criptosFiltrados; let i = index" class="cedear-card staggered-reveal" [style.animation-delay]="(i * 0.05) + 's'">
+                  <div class="cedear-symbol">{{ cripto.simbolo }}</div>
+                  <div class="cedear-name">{{ cripto.nombre }}</div>
+                  
                   <div class="cedear-price">USD {{ cripto.precioUSD | number:'1.2-2' }}</div>
-                  <div class="cedear-usd" style="color: #9cdcfe;">ARS {{ (cripto.precioUSD * tipoCambioUSD) | number:'1.0-0' }}</div>
-                  <div class="text-muted small mt-2 mb-3">24h Change: {{ cripto.variacion24h }}%</div>
-                  <button class="btn-comprar" (click)="comprarCripto(cripto)">
-                    🛒 Invertir
-                  </button>
+                  <div class="text-muted small mb-3">
+                    <span [class.positivo]="cripto.variacion24h >= 0" [class.negativo]="cripto.variacion24h < 0">
+                      {{ (cripto.variacion24h >= 0 ? '+' : '') }}{{ cripto.variacion24h | number:'1.2-2' }}%
+                    </span>
+                    • ARS {{ (cripto.precioUSD * tipoCambioUSD) | number:'1.0-0' }}
+                  </div>
+                  
+                  <button class="btn-comprar" (click)="comprarCripto(cripto)">Invertir</button>
                 </div>
               </div>
               
@@ -612,39 +642,35 @@ export class AppComponent implements OnInit {
 
   async obtenerDolarBlue() {
     try {
-      const response = await fetch('https://api.dolarsi.com/api/v1/dolar');
+      const response = await fetch('https://dolarapi.com/v1/dolares/blue');
       if (response.ok) {
         const data = await response.json();
-        const blue = data.find((d: any) => d.casa === 'blue' || d.nombre?.toLowerCase().includes('blue'));
-        if (blue && blue.venta) {
-          const ventaStr = blue.venta.toString().replace(',', '.');
-          const venta = parseFloat(ventaStr);
-          if (!isNaN(venta) && venta > 1000) {
-            this.tipoCambioUSD = Math.round(venta);
-            this.guardarTipoCambio();
-            this.calcularTodosLosReportes();
-            this.actualizarFecha();
-            return;
-          }
+        if (data && data.venta) {
+          this.tipoCambioUSD = Math.round(data.venta);
+          this.guardarTipoCambio();
+          this.calcularTodosLosReportes();
+          this.actualizarFecha();
+          console.log('Dólar Blue actualizado:', this.tipoCambioUSD);
+          return;
         }
       }
     } catch (error) {
-      console.log('Intentando fuente alternativa...');
+      console.log('Error con DolarAPI, intentando Bluelytics...');
     }
 
     try {
       const response = await fetch('https://api.bluelytics.com.ar/api/v2/latest');
       if (response.ok) {
         const data = await response.json();
-        if (data.blue && data.blue.value_avg) {
-          this.tipoCambioUSD = Math.round(data.blue.value_avg);
+        if (data.blue && data.blue.value_sell) {
+          this.tipoCambioUSD = Math.round(data.blue.value_sell);
           this.guardarTipoCambio();
           this.calcularTodosLosReportes();
           this.actualizarFecha();
         }
       }
     } catch (error) {
-      console.log('No se pudo obtener el dólar blue automáticamente, usando valor por defecto');
+      console.error('No se pudo obtener el dólar blue automáticamente');
     }
   }
 
@@ -717,8 +743,11 @@ export class AppComponent implements OnInit {
     this.cedearsFiltrados = this.cedears.filter(cedear => {
       const coincideTexto = cedear.simbolo.toLowerCase().includes(texto) || 
                           cedear.nombre.toLowerCase().includes(texto);
-      const coincideCategoria = this.filtroCategoria === 'todos' || 
-                               cedear.categoria.toLowerCase() === this.filtroCategoria;
+      
+      const cat = cedear.categoria.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+      const filtro = this.filtroCategoria.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+      
+      const coincideCategoria = this.filtroCategoria === 'todos' || cat === filtro;
       return coincideTexto && coincideCategoria;
     });
   }
@@ -779,6 +808,104 @@ export class AppComponent implements OnInit {
     });
     this.calcularTodosLosReportes();
     this.reporteGeneral = this.inversiones.length > 0;
+    if (this.tabActiva === 'resumen') {
+      setTimeout(() => this.generarGrafico(), 200);
+    }
+  }
+
+  setTab(tab: string) {
+    this.tabActiva = tab;
+    if (tab === 'resumen') {
+      setTimeout(() => this.generarGrafico(), 200);
+    }
+  }
+
+  grafico: any;
+
+  generarGrafico() {
+    const canvas = document.getElementById('evolucionChart') as HTMLCanvasElement;
+    if (!canvas || !Chart) return;
+
+    if (this.grafico) {
+      this.grafico.destroy();
+    }
+
+    // Ordenar inversiones por fecha
+    const invOrdenadas = [...this.inversiones].sort((a, b) => 
+      new Date(a.fechaCompra || '').getTime() - new Date(b.fechaCompra || '').getTime()
+    );
+
+    // Agrupar por fecha y sumar acumulado
+    let capitalAcumulado = 0;
+    let valorAcumulado = 0;
+    const labels: string[] = [];
+    const dataCapital: number[] = [];
+    const dataValor: number[] = [];
+
+    invOrdenadas.forEach(inv => {
+      const fecha = new Date(inv.fechaCompra || '').toLocaleDateString();
+      labels.push(fecha);
+      
+      capitalAcumulado += inv.cantidad * inv.precioCompra;
+      const precioActual = this.preciosActual[inv.id!] || (inv.tipo === 'CEDEAR' ? this.getPrecioActualCedear(inv) : inv.precioCompra);
+      valorAcumulado += inv.cantidad * precioActual;
+      
+      dataCapital.push(capitalAcumulado);
+      dataValor.push(valorAcumulado);
+    });
+
+    this.grafico = new Chart(canvas, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: 'Capital Invertido (ARS)',
+            data: dataCapital,
+            borderColor: '#86868b',
+            backgroundColor: 'rgba(134, 134, 139, 0.1)',
+            fill: true,
+            tension: 0.3
+          },
+          {
+            label: 'Valor Actual Portafolio (ARS)',
+            data: dataValor,
+            borderColor: '#0071e3',
+            backgroundColor: 'rgba(0, 113, 227, 0.1)',
+            fill: true,
+            tension: 0.3
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { intersect: false, mode: 'index' },
+        plugins: {
+          legend: { position: 'top', labels: { font: { family: 'Inter', size: 12 } } },
+          tooltip: {
+            backgroundColor: 'rgba(255, 255, 255, 0.9)',
+            titleColor: '#1d1d1f',
+            bodyColor: '#1d1d1f',
+            borderColor: '#d2d2d7',
+            borderWidth: 1,
+            padding: 12,
+            bodyFont: { family: 'Inter' }
+          }
+        },
+        scales: {
+          y: { 
+            beginAtZero: false, 
+            grid: { color: 'rgba(0,0,0,0.05)' },
+            ticks: { font: { family: 'Inter' } } 
+          },
+          x: { 
+            grid: { display: false },
+            ticks: { font: { family: 'Inter' } } 
+          }
+        }
+      }
+    });
   }
 
   comprarCedear(cedear: Cedear) {
