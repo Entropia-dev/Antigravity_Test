@@ -84,7 +84,7 @@ interface Cripto {
         <div class="container d-flex justify-content-between align-items-center">
           <h1 (click)="mostrarApp = false" style="cursor: pointer;">Asset Manager</h1>
           <div class="header-meta text-muted small">
-            DOLAR BLUE: {{ tipoCambioUSD }}
+            DOLAR BLUE: <span [class.text-warning]="tipoCambioUSD <= 0">{{ tipoCambioUSD > 0 ? (tipoCambioUSD | number:'1.0-0') : 'Cargando...' }}</span>
           </div>
         </div>
       </div>
@@ -95,25 +95,25 @@ interface Cripto {
             class="nav-tab" 
             [class.active]="tabActiva === 'inversiones'"
             (click)="setTab('inversiones')">
-            Portafolio.
+            Portafolio
           </button>
           <button 
             class="nav-tab" 
             [class.active]="tabActiva === 'resumen'"
             (click)="setTab('resumen')">
-            Resumen.
+            Resumen
           </button>
           <button 
             class="nav-tab" 
             [class.active]="tabActiva === 'cedears'"
             (click)="setTab('cedears')">
-            Tickers.
+            Tickers
           </button>
           <button 
             class="nav-tab" 
             [class.active]="tabActiva === 'cripto'"
             (click)="setTab('cripto')">
-            Crypto.
+            Crypto
           </button>
         </div>
 
@@ -125,17 +125,23 @@ interface Cripto {
             </div>
             <div class="card-body">
               <div class="row align-items-center">
-                <div class="col-md-4">
+                <div class="col-md-5">
                   <label class="form-label">Ajustar manualmente</label>
-                  <div class="input-group">
+                  <div class="input-group input-group-sm">
                     <span class="input-group-text">$</span>
                     <input type="number" step="1" class="form-control" 
-                           [(ngModel)]="tipoCambioUSD" (ngModelChange)="onTipoCambioChange()">
+                           [(ngModel)]="dolarManualInput" placeholder="Ej: 1100">
+                    <button class="btn btn-primary" (click)="aplicarDolarManual()" title="Aplicar este valor al sistema">
+                      ✓ Aplicar
+                    </button>
+                    <button *ngIf="usarDolarManual" class="btn btn-outline-warning" (click)="obtenerDolarBlue()" title="Volver a cotización real">
+                      API
+                    </button>
                   </div>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-3">
                   <button class="btn btn-sm btn-refresh" (click)="obtenerDolarBlue()">
-                    🔄 Actualizar desde web
+                    🔄 API Directa
                   </button>
                 </div>
                 <div class="col-md-4">
@@ -203,7 +209,7 @@ interface Cripto {
                     </tr>
                   </thead>
                   <tbody>
-                    <tr *ngFor="let inv of inversiones">
+                    <tr *ngFor="let inv of inversionesActivas">
                       <td>{{ inv.nombre }}</td>
                       <td>
                         <span class="tipo-badge">{{ inv.tipo }}</span>
@@ -247,6 +253,7 @@ interface Cripto {
                         <span *ngIf="!reportes[inv.id!]" class="text-muted">-</span>
                       </td>
                       <td>
+                        <button class="btn btn-warning btn-sm" style="margin-right: 5px;" (click)="venderInversion(inv)">Vender</button>
                         <button class="btn btn-danger btn-sm" (click)="eliminarInversion(inv.id!)">Eliminar</button>
                       </td>
                     </tr>
@@ -261,63 +268,50 @@ interface Cripto {
         </div>
 
         <div *ngIf="tabActiva === 'resumen'">
-          <div class="card staggered-reveal" *ngIf="inversiones.length > 0">
-            <div class="card-header">
-              <h5>Dashboard.</h5>
+          <div class="bento-container staggered-reveal">
+            
+            <div class="bento-card hero-card">
+              <div class="bento-icon">📊</div>
+              <p class="bento-label">Valor Actual del Portafolio</p>
+              <h2 class="bento-value main-val">{{ valorActualTotal | currency }}</h2>
+              <p class="bento-sub">Equivalente a USD {{ totalUSD | number:'1.2-2' }}</p>
             </div>
-            <div class="card-body">
-              <div class="row">
-                <div class="col-md-4 mb-4">
-                  <p class="resumen-label">Total Invertido</p>
-                  <p class="resumen-valor">{{ totalInvertido | currency }}</p>
-                </div>
-                <div class="col-md-4 mb-4">
-                  <p class="resumen-label">Valor Actual</p>
-                  <p class="resumen-valor">{{ valorActualTotal | currency }}</p>
-                </div>
-                <div class="col-md-4 mb-4">
-                  <p class="resumen-label">Valuation (USD)</p>
-                  <p class="resumen-valor" style="color: var(--apple-blue);">USD {{ totalUSD | number:'1.2-2' }}</p>
-                </div>
-              </div>
-              
-              <hr class="opacity-10">
-              
-              <div class="row mt-4">
-                <div class="col-md-6 mb-3">
-                  <p class="resumen-label">Ganancia Neta ARS</p>
-                  <p class="resumen-valor" [class.positivo]="gananciaPerdidaTotal >= 0" [class.negativo]="gananciaPerdidaTotal < 0">
-                    {{ (gananciaPerdidaTotal >= 0 ? '+' : '') }}{{ gananciaPerdidaTotal | currency }}
-                  </p>
-                </div>
-                <div class="col-md-6 mb-3">
-                  <p class="resumen-label">Profit Total USD</p>
-                  <p class="resumen-valor" [class.positivo]="gananciaPerdidaTotal >= 0" [class.negativo]="gananciaPerdidaTotal < 0">
-                    USD {{ (gananciaPerdidaTotal >= 0 ? '+' : '') }}{{ gananciaPerdidaUSD | number:'1.2-2' }}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
 
-          <!-- GRÁFICO DE EVOLUCIÓN -->
-          <div class="card staggered-reveal" *ngIf="inversiones.length > 0">
-            <div class="card-header">
-              <h5>Evolución del Portafolio.</h5>
+            <div class="bento-card" [ngClass]="gananciaPerdidaTotal >= 0 ? 'profit-card align-items-center' : 'loss-card align-items-center'" style="display: flex; flex-direction: column; justify-content: center; text-align: center;">
+              <p class="bento-label" style="color: inherit; opacity: 0.9;">Retorno Histórico</p>
+              <h3 class="bento-value" style="color: inherit; margin: 10px 0;">
+                {{ gananciaPerdidaTotal >= 0 ? '+' : '' }}{{ gananciaPerdidaTotal | currency }}
+              </h3>
+              <div class="pill-badge" style="background: rgba(255,255,255,0.25); color: inherit; padding: 6px 16px; border-radius: 20px; font-weight: 700; font-size: 1.2rem;">
+                {{ gananciaPerdidaTotal >= 0 ? '+' : '' }}{{ (totalInvertido > 0 ? (gananciaPerdidaTotal / totalInvertido * 100) : 0) | number:'1.2-2' }}%
+              </div>
             </div>
-            <div class="card-body">
-              <div style="height: 350px; width: 100%;">
+
+            <div class="bento-card d-flex flex-column justify-content-center">
+              <div class="bento-icon">💰</div>
+              <p class="bento-label">Capital Total Invertido</p>
+              <h3 class="bento-value">{{ totalInvertido | currency }}</h3>
+              <p class="bento-sub text-muted" style="color:var(--apple-gray)!important;">Capital base aportado</p>
+            </div>
+
+            <div class="bento-card d-flex flex-column justify-content-center">
+              <div class="bento-icon">🇺🇸</div>
+              <p class="bento-label">Profit Neta en USD</p>
+              <h3 class="bento-value" [class.positivo]="gananciaPerdidaTotal >= 0" [class.negativo]="gananciaPerdidaTotal < 0">
+                USD {{ gananciaPerdidaTotal >= 0 ? '+' : '' }}{{ gananciaPerdidaUSD | number:'1.2-2' }}
+              </h3>
+            </div>
+
+            <div class="bento-card chart-card">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <p class="bento-label mb-0">Evolución Acumulada del Patrimonio</p>
+                <div class="badge bg-light text-dark border">Capital vs Rendimiento</div>
+              </div>
+              <div class="chart-wrapper">
                 <canvas id="evolucionChart"></canvas>
               </div>
-              <p class="text-muted small mt-3 text-center">
-                Visualización acumulada por fecha de adquisición (Capital vs Capital+Profit).
-              </p>
             </div>
-          </div>
-          
-          <div class="card text-center py-5 staggered-reveal" *ngIf="inversiones.length === 0">
-             <h4 class="text-muted">No hay datos para mostrar el Dashboard.</h4>
-             <p class="text-muted small">Agrega inversiones en la pestaña de Portafolio para ver tu rendimiento.</p>
+
           </div>
         </div>
 
@@ -423,7 +417,15 @@ interface Cripto {
               <div class="cedear-grid">
                 <div *ngFor="let cedear of cedearsFiltrados; let i = index" class="cedear-card staggered-reveal" [style.animation-delay]="(i * 0.05) + 's'">
                   <div class="cedear-symbol">{{ cedear.simbolo }}</div>
-                  <div class="cedear-name">{{ cedear.nombre }}</div>
+                  <div class="d-flex justify-content-between align-items-center mb-2">
+                    <div class="cedear-name mb-0">{{ cedear.nombre }}</div>
+                    <div class="cantidad-selector d-flex align-items-center">
+                      <span class="text-muted small" style="margin-right: 6px;">Cant:</span>
+                      <input type="number" min="1" class="form-control form-control-sm text-center" 
+                             style="width: 65px; border: 1px solid #d2d2d7 !important; padding: 4px;" 
+                             [(ngModel)]="cantidadesCompra[cedear.simbolo]">
+                    </div>
+                  </div>
                   
                   <div class="cedear-price">{{ cedear.precioARS | currency }}</div>
                   <div class="text-muted small mb-3">
@@ -457,8 +459,8 @@ interface Cripto {
             <div class="card-header d-flex justify-content-between align-items-center">
               <h5>Cotizaciones Cripto (USD / ARS)</h5>
               <div class="d-flex align-items-center gap-3">
-                <span class="badge bg-primary">Fuente: CoinGecko</span>
-                <small class="text-white">Actualizado: {{ horaActual }}</small>
+                <span class="badge bg-primary" style="background-color: #f3ba2f !important; color: #111;">Fuente: Binance</span>
+                <small class="text-muted">Actualizado: {{ horaActual }}</small>
               </div>
             </div>
             <div class="card-body">
@@ -473,8 +475,24 @@ interface Cripto {
               
               <div class="cedear-grid">
                 <div *ngFor="let cripto of criptosFiltrados; let i = index" class="cedear-card staggered-reveal" [style.animation-delay]="(i * 0.05) + 's'">
-                  <div class="cedear-symbol">{{ cripto.simbolo }}</div>
-                  <div class="cedear-name">{{ cripto.nombre }}</div>
+                  <div class="cedear-symbol" style="display: flex; justify-content: space-between; align-items: center;">
+                    {{ cripto.simbolo }}
+                    <span 
+                      (click)="toggleCriptoFavorito(cripto.simbolo)"
+                      [style.color]="esCriptoFavorita(cripto.simbolo) ? '#f39c12' : '#888'"
+                      style="cursor: pointer; font-size: 1.2rem; transition: color 0.2s;">
+                      ★
+                    </span>
+                  </div>
+                  <div class="d-flex justify-content-between align-items-center mb-2">
+                    <div class="cedear-name mb-0">{{ cripto.nombre }}</div>
+                    <div class="cantidad-selector d-flex align-items-center">
+                      <span class="text-muted small" style="margin-right: 6px;">Cant:</span>
+                      <input type="number" min="0.0001" step="0.0001" class="form-control form-control-sm text-center" 
+                             style="width: 80px; border: 1px solid #d2d2d7 !important; padding: 4px;" 
+                             [(ngModel)]="cantidadesCompra[cripto.simbolo]">
+                    </div>
+                  </div>
                   
                   <div class="cedear-price">USD {{ cripto.precioUSD | number:'1.2-2' }}</div>
                   <div class="text-muted small mb-3">
@@ -500,6 +518,7 @@ interface Cripto {
   `
 })
 export class AppComponent implements OnInit {
+  cantidadesCompra: { [simbolo: string]: number } = {};
   inversiones: Inversion[] = [];
   reportes: { [id: number]: ReporteGanancias } = {};
   preciosActual: { [id: number]: number } = {};
@@ -509,15 +528,18 @@ export class AppComponent implements OnInit {
   tabActiva: string = 'inversiones';
   ultimaActualizacion: string = '';
   horaActual: string = '';
-  tipoCambioUSD: number = 1425;
+  tipoCambioUSD: number = 0;
   buscadorCedears: string = '';
   filtroCategoria: string = 'todos';
   buscadorCripto: string = '';
   nuevoCedear: NuevoCedear = { simbolo: '', nombre: '', precioARS: 0, variacion: 0 };
   nuevaCategoria: string = 'Tech';
+  usarDolarManual: boolean = false;
+  dolarManualInput: number = 0;
 
   criptos: Cripto[] = [];
   criptosFiltrados: Cripto[] = [];
+  criptosFavoritas: string[] = ['btc', 'nexo', 'usdt', 'usdc'];
 
   cedears: Cedear[] = [
     { simbolo: 'AAPL', nombre: 'Apple Inc.', precioARS: 18350.00, variacion: 1.25, ultimoUpdate: '20/03 16:59', categoria: 'Tech' },
@@ -570,15 +592,39 @@ export class AppComponent implements OnInit {
 
   constructor(private inversionService: InversionService) {}
 
-  ngOnInit() {
-    this.tipoCambioUSD = 1425;
-    this.cargarTipoCambio();
-    this.obtenerDolarBlue();
-    this.cargarCedearsDesdeAPI();
-    this.cargarCriptosDesdeAPI();
-    this.cargarCedearsPersonalizados();
-    this.cargarInversiones();
+  async ngOnInit() {
+    const savedFavs = localStorage.getItem('criptosFavoritas');
+    if (savedFavs) {
+      try { this.criptosFavoritas = JSON.parse(savedFavs); } catch (e) {}
+    }
+    
+    // Empezamos asumiendo que no conocemos el dólar (0)
+    // Se cargará desde la API obligatoriamente al arrancar
+    this.tipoCambioUSD = 0;
     this.actualizarFecha();
+    
+    try {
+      // 1. Obtenemos dólar actualizado (obligatorio esperar por cálculos USD)
+      await this.obtenerDolarBlue();
+      console.log('Dólar OK');
+
+      // 2. Forzamos al backend a limpiar su caché y buscar precios frescos de Yahoo/Binance
+      await this.inversionService.refreshBackend().toPromise();
+      console.log('Backend Refrescado (Yahoo/Binance)');
+
+      // 3. Cargamos los datos ya frescos en nuestras listas locales
+      this.cargarCedearsDesdeAPI();
+      this.cargarCriptosDesdeAPI();
+      this.cargarCedearsPersonalizados();
+      
+      // 4. Finalmente cargamos las inversiones y calculamos los reportes con todo listo
+      this.cargarInversiones();
+      
+      console.log('Aplicación sincronizada totalmente con APIs');
+    } catch (error) {
+      console.error('Error durante la sincronización inicial:', error);
+      this.cargarInversiones();
+    }
   }
 
   cargarCriptosDesdeAPI() {
@@ -593,23 +639,51 @@ export class AppComponent implements OnInit {
 
   filtrarCriptos() {
     const texto = this.buscadorCripto.toLowerCase();
-    this.criptosFiltrados = this.criptos.filter(c => 
+    let filtrados = this.criptos.filter(c => 
       c.simbolo.toLowerCase().includes(texto) || 
       c.nombre.toLowerCase().includes(texto)
     );
+
+    // Ordenar por favoritas primero
+    filtrados.sort((a, b) => {
+      const aFav = this.esCriptoFavorita(a.simbolo);
+      const bFav = this.esCriptoFavorita(b.simbolo);
+      if (aFav && !bFav) return -1;
+      if (!aFav && bFav) return 1;
+      return 0; // mantener orden
+    });
+
+    this.criptosFiltrados = filtrados;
+  }
+
+  esCriptoFavorita(simbolo: string): boolean {
+    return this.criptosFavoritas.includes(simbolo.toLowerCase());
+  }
+
+  toggleCriptoFavorito(simbolo: string) {
+    const sym = simbolo.toLowerCase();
+    if (this.criptosFavoritas.includes(sym)) {
+      this.criptosFavoritas = this.criptosFavoritas.filter(f => f !== sym);
+    } else {
+      this.criptosFavoritas.push(sym);
+    }
+    localStorage.setItem('criptosFavoritas', JSON.stringify(this.criptosFavoritas));
+    this.filtrarCriptos();
   }
 
   comprarCripto(cripto: Cripto) {
+    const cant = this.cantidadesCompra[cripto.simbolo] || 1;
     const nueva: Inversion = {
       nombre: cripto.nombre,
       tipo: 'CRIPTO',
-      cantidad: 1,
+      cantidad: cant,
       precioCompra: cripto.precioUSD * this.tipoCambioUSD,
       fechaCompra: new Date().toISOString().split('T')[0]
     };
     
     this.inversionService.crearInversion(nueva).subscribe({
       next: () => {
+        this.cantidadesCompra[cripto.simbolo] = 1;
         this.cargarInversiones();
         this.tabActiva = 'inversiones';
       },
@@ -640,7 +714,31 @@ export class AppComponent implements OnInit {
     });
   }
 
-  async obtenerDolarBlue() {
+  obtenerDolarBlue(): Promise<number> {
+    this.usarDolarManual = false; // Al pedir de la API, desactivamos el modo manual
+    return new Promise((resolve, reject) => {
+      this.inversionService.getDolar().subscribe({
+        next: (data) => {
+          if (data && data.tipoCambio) {
+            this.tipoCambioUSD = data.tipoCambio;
+            this.guardarTipoCambio();
+            this.calcularTodosLosReportes();
+            this.actualizarFecha();
+            console.log('Dólar actualizado:', this.tipoCambioUSD);
+            resolve(this.tipoCambioUSD);
+          } else {
+            resolve(this.tipoCambioUSD);
+          }
+        },
+        error: (err) => {
+          console.error('Error obteniendo dólar desde backend:', err);
+          this.fetchDolarDirecto().then(v => resolve(v)).catch(() => resolve(this.tipoCambioUSD));
+        }
+      });
+    });
+  }
+
+  async fetchDolarDirecto(): Promise<number> {
     try {
       const response = await fetch('https://dolarapi.com/v1/dolares/blue');
       if (response.ok) {
@@ -648,29 +746,24 @@ export class AppComponent implements OnInit {
         if (data && data.venta) {
           this.tipoCambioUSD = Math.round(data.venta);
           this.guardarTipoCambio();
-          this.calcularTodosLosReportes();
           this.actualizarFecha();
-          console.log('Dólar Blue actualizado:', this.tipoCambioUSD);
-          return;
+          return this.tipoCambioUSD;
         }
       }
-    } catch (error) {
-      console.log('Error con DolarAPI, intentando Bluelytics...');
+    } catch (e) {
+      console.error('Fallo total de obtención de dólar');
     }
+    return this.tipoCambioUSD;
+  }
 
-    try {
-      const response = await fetch('https://api.bluelytics.com.ar/api/v2/latest');
-      if (response.ok) {
-        const data = await response.json();
-        if (data.blue && data.blue.value_sell) {
-          this.tipoCambioUSD = Math.round(data.blue.value_sell);
-          this.guardarTipoCambio();
-          this.calcularTodosLosReportes();
-          this.actualizarFecha();
-        }
-      }
-    } catch (error) {
-      console.error('No se pudo obtener el dólar blue automáticamente');
+  aplicarDolarManual() {
+    if (this.dolarManualInput > 0) {
+      this.tipoCambioUSD = this.dolarManualInput;
+      this.usarDolarManual = true;
+      this.guardarTipoCambio();
+      this.calcularTodosLosReportes();
+      this.actualizarFecha();
+      console.log('Dólar Manual Aplicado:', this.tipoCambioUSD);
     }
   }
 
@@ -792,7 +885,7 @@ export class AppComponent implements OnInit {
   }
 
   calcularTodosLosReportes() {
-    this.inversiones.forEach(inv => {
+    this.inversionesActivas.forEach(inv => {
       const precioActual = this.preciosActual[inv.id!] || (inv.tipo === 'CEDEAR' ? this.getPrecioActualCedear(inv) : inv.precioCompra);
       if (precioActual) {
         this.calcularReporte(inv);
@@ -800,8 +893,15 @@ export class AppComponent implements OnInit {
     });
   }
 
-  actualizarPreciosYReportes() {
-    this.inversiones.forEach(inv => {
+  async actualizarPreciosYReportes() {
+    // Solo actualizamos de la API si NO estamos usando un valor manual fijo
+    if (!this.usarDolarManual) {
+      await this.obtenerDolarBlue();
+    } else {
+      console.log('Usando dólar manual, saltando actualización de API.');
+    }
+    
+    this.inversionesActivas.forEach(inv => {
       if (inv.tipo === 'CEDEAR') {
         this.preciosActual[inv.id!] = this.getPrecioActualCedear(inv);
       }
@@ -830,29 +930,59 @@ export class AppComponent implements OnInit {
       this.grafico.destroy();
     }
 
-    // Ordenar inversiones por fecha
-    const invOrdenadas = [...this.inversiones].sort((a, b) => 
-      new Date(a.fechaCompra || '').getTime() - new Date(b.fechaCompra || '').getTime()
-    );
+    const rawEvents: any[] = [];
+    this.inversiones.forEach(inv => {
+      rawEvents.push({ date: new Date(inv.fechaCompra || ''), type: 'COMPRA', inv });
+      if (inv.estado === 'VENDIDA') {
+        const vDate = inv.fechaVenta ? new Date(inv.fechaVenta) : new Date();
+        rawEvents.push({ date: vDate, type: 'VENTA', inv });
+      }
+    });
 
-    // Agrupar por fecha y sumar acumulado
-    let capitalAcumulado = 0;
-    let valorAcumulado = 0;
+    rawEvents.sort((a, b) => a.date.getTime() - b.date.getTime());
+
+    let activas: Inversion[] = [];
     const labels: string[] = [];
     const dataCapital: number[] = [];
     const dataValor: number[] = [];
 
-    invOrdenadas.forEach(inv => {
-      const fecha = new Date(inv.fechaCompra || '').toLocaleDateString();
-      labels.push(fecha);
-      
-      capitalAcumulado += inv.cantidad * inv.precioCompra;
-      const precioActual = this.preciosActual[inv.id!] || (inv.tipo === 'CEDEAR' ? this.getPrecioActualCedear(inv) : inv.precioCompra);
-      valorAcumulado += inv.cantidad * precioActual;
-      
-      dataCapital.push(capitalAcumulado);
-      dataValor.push(valorAcumulado);
+    rawEvents.forEach(ev => {
+      if (ev.type === 'COMPRA') {
+        activas.push(ev.inv);
+      } else {
+        activas = activas.filter(i => i.id !== ev.inv.id);
+      }
+
+      let cap = 0;
+      let val = 0;
+      activas.forEach(a => {
+        cap += a.cantidad * a.precioCompra;
+        const precioActual = this.preciosActual[a.id!] || (a.tipo === 'CEDEAR' ? this.getPrecioActualCedear(a) : a.precioCompra);
+        val += a.cantidad * precioActual;
+      });
+
+      labels.push(ev.date.toLocaleDateString());
+      dataCapital.push(cap);
+      dataValor.push(val);
     });
+
+    const ctx = canvas.getContext('2d');
+    
+    // Gradientes modernos
+    let gradientValor = 'rgba(0, 113, 227, 0.1)';
+    let gradientCapital = 'rgba(134, 134, 139, 0.1)';
+    
+    if (ctx) {
+      const gradV = ctx.createLinearGradient(0, 0, 0, 350);
+      gradV.addColorStop(0, 'rgba(0, 113, 227, 0.4)');
+      gradV.addColorStop(1, 'rgba(0, 113, 227, 0.0)');
+      gradientValor = gradV as any;
+
+      const gradC = ctx.createLinearGradient(0, 0, 0, 350);
+      gradC.addColorStop(0, 'rgba(134, 134, 139, 0.2)');
+      gradC.addColorStop(1, 'rgba(134, 134, 139, 0.0)');
+      gradientCapital = gradC as any;
+    }
 
     this.grafico = new Chart(canvas, {
       type: 'line',
@@ -860,20 +990,29 @@ export class AppComponent implements OnInit {
         labels: labels,
         datasets: [
           {
-            label: 'Capital Invertido (ARS)',
+            label: 'Capital Invertido (Base)',
             data: dataCapital,
             borderColor: '#86868b',
-            backgroundColor: 'rgba(134, 134, 139, 0.1)',
+            backgroundColor: gradientCapital,
+            borderWidth: 2,
+            borderDash: [5, 5],
             fill: true,
-            tension: 0.3
+            tension: 0.4,
+            pointRadius: 0,
+            pointHoverRadius: 5
           },
           {
-            label: 'Valor Actual Portafolio (ARS)',
+            label: 'Valor de Cartera',
             data: dataValor,
             borderColor: '#0071e3',
-            backgroundColor: 'rgba(0, 113, 227, 0.1)',
+            backgroundColor: gradientValor,
+            borderWidth: 3,
             fill: true,
-            tension: 0.3
+            tension: 0.4,
+            pointRadius: 0,
+            pointHoverRadius: 6,
+            pointBackgroundColor: '#fff',
+            pointBorderWidth: 2
           }
         ]
       },
@@ -882,26 +1021,41 @@ export class AppComponent implements OnInit {
         maintainAspectRatio: false,
         interaction: { intersect: false, mode: 'index' },
         plugins: {
-          legend: { position: 'top', labels: { font: { family: 'Inter', size: 12 } } },
+          legend: { 
+            position: 'top', 
+            labels: { 
+              font: { family: 'Inter', size: 13, weight: '500' }, 
+              useBorderRadius: true, 
+              borderRadius: 6, 
+              boxWidth: 24, 
+              boxHeight: 12
+            } 
+          },
           tooltip: {
-            backgroundColor: 'rgba(255, 255, 255, 0.9)',
-            titleColor: '#1d1d1f',
-            bodyColor: '#1d1d1f',
-            borderColor: '#d2d2d7',
-            borderWidth: 1,
-            padding: 12,
-            bodyFont: { family: 'Inter' }
+            backgroundColor: 'rgba(29, 29, 31, 0.85)',
+            titleColor: '#fff',
+            bodyColor: '#fff',
+            padding: 14,
+            cornerRadius: 12,
+            bodyFont: { family: 'Inter', size: 13 },
+            titleFont: { family: 'Inter', size: 13, weight: 'bold' }
           }
         },
         scales: {
           y: { 
             beginAtZero: false, 
-            grid: { color: 'rgba(0,0,0,0.05)' },
-            ticks: { font: { family: 'Inter' } } 
+            grid: { display: false, drawBorder: false },
+            ticks: { 
+              font: { family: 'Inter', size: 11 }, 
+              color: '#86868b',
+              callback: function(value: any) { return '$' + (Number(value) / 1000).toFixed(0) + 'k'; }
+            },
+            border: { display: false }
           },
           x: { 
-            grid: { display: false },
-            ticks: { font: { family: 'Inter' } } 
+            grid: { display: false, drawBorder: false },
+            ticks: { font: { family: 'Inter', size: 11 }, color: '#86868b', maxTicksLimit: 6 },
+            border: { display: false }
           }
         }
       }
@@ -909,16 +1063,18 @@ export class AppComponent implements OnInit {
   }
 
   comprarCedear(cedear: Cedear) {
+    const cant = this.cantidadesCompra[cedear.simbolo] || 1;
     const nueva: Inversion = {
       nombre: cedear.nombre,
       tipo: 'CEDEAR',
-      cantidad: 1,
+      cantidad: cant,
       precioCompra: cedear.precioARS,
       fechaCompra: new Date().toISOString().split('T')[0]
     };
     
     this.inversionService.crearInversion(nueva).subscribe({
       next: () => {
+        this.cantidadesCompra[cedear.simbolo] = 1;
         this.cargarInversiones();
         this.tabActiva = 'inversiones';
       },
@@ -960,6 +1116,21 @@ export class AppComponent implements OnInit {
     });
   }
 
+  get inversionesActivas(): Inversion[] {
+    return this.inversiones.filter(i => i.estado !== 'VENDIDA');
+  }
+
+  venderInversion(inv: Inversion) {
+    const actualizada: Inversion = {
+      ...inv,
+      estado: 'VENDIDA'
+    };
+    this.inversionService.actualizarInversion(inv.id!, actualizada).subscribe({
+      next: () => this.cargarInversiones(),
+      error: (err: any) => console.error('Error cerrando:', err)
+    });
+  }
+
   eliminarInversion(id: number) {
     this.inversionService.eliminarInversion(id).subscribe({
       next: () => this.cargarInversiones(),
@@ -968,11 +1139,11 @@ export class AppComponent implements OnInit {
   }
 
   get totalInvertido(): number {
-    return this.inversiones.reduce((sum, inv) => sum + (inv.precioCompra * inv.cantidad), 0);
+    return this.inversionesActivas.reduce((sum, inv) => sum + (inv.precioCompra * inv.cantidad), 0);
   }
 
   get valorActualTotal(): number {
-    return this.inversiones.reduce((sum, inv) => {
+    return this.inversionesActivas.reduce((sum, inv) => {
       const precioActual = this.preciosActual[inv.id!] || (inv.tipo === 'CEDEAR' ? this.getPrecioActualCedear(inv) : inv.precioCompra);
       return sum + (precioActual * inv.cantidad);
     }, 0);

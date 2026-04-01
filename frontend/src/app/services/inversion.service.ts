@@ -10,7 +10,7 @@ export class InversionService {
   private nextId = 1;
   private apiUrl = 'http://localhost:3000';
   
-  private tipoCambioSubject = new BehaviorSubject<number>(1425);
+  private tipoCambioSubject = new BehaviorSubject<number>(1);
   private personalizadosSubject = new BehaviorSubject<any[]>([]);
 
   constructor(private http: HttpClient) {
@@ -23,7 +23,7 @@ export class InversionService {
         if (data && data.inversiones) {
           this.inversionesSubject.next(data.inversiones);
           this.nextId = data.nextId || 1;
-          this.tipoCambioSubject.next(data.tipoCambioUSD || 1425);
+          this.tipoCambioSubject.next(data.tipoCambioUSD || 1);
           this.personalizadosSubject.next(data.cedears_personalizados || []);
         } else {
           // Migración de localStorage si el backend está vacío
@@ -146,6 +146,10 @@ export class InversionService {
 
   getPreciosCedears(): Observable<any[]> {
     return this.http.get<any[]>(`${this.apiUrl}/api/precios`);
+  }
+
+  refreshBackend(): Observable<any> {
+    return this.http.get(`${this.apiUrl}/api/precios/refresh`);
   }
 
   getDolar(): Observable<any> {

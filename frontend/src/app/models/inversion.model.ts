@@ -6,6 +6,8 @@ export interface Inversion {
   precioCompra: number;
   fechaCompra: string;
   observaciones?: string;
+  estado?: 'ACTIVA' | 'VENDIDA';
+  fechaVenta?: string;
 }
 
 export interface Precio {

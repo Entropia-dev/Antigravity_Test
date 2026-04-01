@@ -176,24 +176,33 @@ h1, h2, h3, h4, .apple-title {
 
 .nav-tabs-custom {
   display: flex;
-  gap: 24px;
+  gap: 10px;
   margin-bottom: 40px;
   padding-top: 40px;
 }
 
 .nav-tab {
-  background: transparent;
+  background-color: transparent;
   color: var(--apple-black);
   border: none;
-  padding: 0;
+  padding: 12px 24px;
+  border-radius: 980px; /* Oval shape */
   font-size: 2.2rem;
   font-weight: 700;
-  opacity: 0.3;
-  transition: opacity 0.3s ease;
+  opacity: 0.4;
+  transition: background-color 0.3s ease, opacity 0.3s ease, transform 0.2s ease;
   font-family: var(--font-display);
+  cursor: pointer;
+}
+
+.nav-tab:hover {
+  background-color: rgba(0, 0, 0, 0.12); /* Gray oval much more visible */
+  opacity: 0.9;
+  transform: scale(1.02);
 }
 
 .nav-tab.active {
+  background-color: rgba(0, 0, 0, 0.08);
   opacity: 1;
 }
 
@@ -424,4 +433,110 @@ select.form-control {
 
 .staggered-reveal {
   animation: fade-up 0.8s cubic-bezier(0.165, 0.84, 0.44, 1) backwards;
+}
+
+/* =========================================
+   BENTO GRID - DASHBOARD
+   ========================================= */
+.bento-container {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  margin-bottom: 40px;
+}
+
+.bento-card {
+  background: white;
+  border-radius: 24px;
+  padding: 24px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
+  transition: transform 0.3s cubic-bezier(0.165, 0.84, 0.44, 1), box-shadow 0.3s;
+  border: 1px solid rgba(0,0,0,0.02);
+  display: flex;
+  flex-direction: column;
+}
+
+.bento-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08);
+}
+
+.bento-icon {
+  font-size: 2rem;
+  margin-bottom: 12px;
+}
+
+.bento-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--apple-gray);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.bento-value {
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: var(--apple-black);
+  margin-bottom: 4px;
+  letter-spacing: -0.02em;
+}
+
+.main-val {
+  font-size: 2.4rem;
+  line-height: 1.1;
+  background: linear-gradient(135deg, #1d1d1f 0%, #434344 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.bento-sub {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--apple-blue);
+  margin: 0;
+}
+
+.hero-card {
+  grid-column: span 1;
+  grid-row: span 1;
+  justify-content: center;
+}
+
+.chart-card {
+  grid-column: span 4;
+}
+
+.chart-wrapper {
+  height: 350px;
+}
+
+.profit-card {
+  background: linear-gradient(135deg, #24a148 0%, #158a36 100%);
+  color: white;
+}
+
+.loss-card {
+  background: linear-gradient(135deg, #da1e28 0%, #b81720 100%);
+  color: white;
+}
+
+@media (max-width: 992px) {
+  .bento-container {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .hero-card {
+    grid-column: span 2;
+  }
+}
+
+@media (max-width: 576px) {
+  .bento-container {
+    grid-template-columns: 1fr;
+  }
+  .hero-card, .chart-card {
+    grid-column: span 1;
+  }
 }
