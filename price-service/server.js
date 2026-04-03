@@ -237,15 +237,54 @@ app.get('/api/cripto', async (req, res) => {
   }
 });
 
+const cheerio = require('cheerio');
+
 app.get('/api/dolar', async (req, res) => {
   try {
+    // 1. Intentamos Scrapear DolarHoy (Más preciso para el Blue)
+    try {
+      const respDH = await axios.get('https://dolarhoy.com/', { timeout: 4000 });
+      const $ = cheerio.load(respDH.data);
+      const ventaBlue = $('.tile.dolarblue .venta .val').text().trim().replace('$', '');
+      
+      if (ventaBlue && !isNaN(parseInt(ventaBlue))) {
+        const precio = parseInt(ventaBlue);
+        console.log(`[Dolar] Obtenido de DolarHoy: ${precio}`);
+        return res.json({ tipoCambio: precio, fuente: 'DolarHoy (Web Scraping)' });
+      }
+    } catch (errDH) {
+      console.log('[Dolar] DolarHoy falló o dio timeout, saltando a DolarAPI...');
+    }
+
+    // 2. Fallback a DolarAPI (Muy estable)
     const dResp = await axios.get('https://dolarapi.com/v1/dolares/blue', { timeout: 5000 });
     if (dResp.data && dResp.data.venta) {
       return res.json({ tipoCambio: Math.round(dResp.data.venta), fuente: 'DolarAPI (Blue)' });
     }
-    throw new Error('DolarAPI no devolvió venta.');
+    throw new Error('Ninguna fuente de dólar respondió.');
   } catch (err) {
-    res.status(503).json({ error: 'No se pudo obtener el Dólar MEP libre.' });
+    res.status(503).json({ error: 'No se pudo obtener el Dólar Blue.' });
+  }
+});
+
+app.get('/api/dolares/todos', async (req, res) => {
+  try {
+    const resp = await axios.get('https://dolarapi.com/v1/dolares', { timeout: 6000 });
+    if (resp.data && Array.isArray(resp.data)) {
+      // Nos aseguramos de que los nombres de los campos coincidan con el frontend
+      const resultados = resp.data.map(d => ({
+        nombre: d.nombre || 'Dólar',
+        compra: d.compra || 0,
+        venta: d.venta || 0,
+        fechaActualizacion: d.fechaActualizacion || d.fecha || new Date().toISOString()
+      }));
+      res.json(resultados);
+    } else {
+      res.json([]);
+    }
+  } catch (err) {
+    console.log('[Dolares-Todos] Error:', err.message);
+    res.json([]); // Para que no rompa el frontend, devolvemos array vacío si falla todo
   }
 });
 

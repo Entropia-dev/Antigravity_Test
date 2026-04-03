@@ -83,8 +83,9 @@ interface Cripto {
       <div class="app-header">
         <div class="container d-flex justify-content-between align-items-center">
           <h1 (click)="mostrarApp = false" style="cursor: pointer;">Asset Manager</h1>
-          <div class="header-meta text-muted small">
-            DOLAR BLUE: <span [class.text-warning]="tipoCambioUSD <= 0">{{ tipoCambioUSD > 0 ? (tipoCambioUSD | number:'1.0-0') : 'Cargando...' }}</span>
+          <div class="header-meta text-muted small d-flex align-items-center">
+            <span class="badge badge-fuente me-2" *ngIf="fuenteDolar && tipoCambioUSD > 0">{{ fuenteDolar }}</span>
+            DOLAR BLUE: <span [class.text-warning]="tipoCambioUSD <= 0" class="ms-1">{{ tipoCambioUSD > 0 ? (tipoCambioUSD | number:'1.0-0') : 'Cargando...' }}</span>
           </div>
         </div>
       </div>
@@ -115,12 +116,18 @@ interface Cripto {
             (click)="setTab('cripto')">
             Crypto
           </button>
+          <button 
+            class="nav-tab" 
+            [class.active]="tabActiva === 'cotizaciones'"
+            (click)="setTab('cotizaciones')">
+            Cotizaciones
+          </button>
         </div>
 
         <div *ngIf="tabActiva === 'inversiones'">
           <div class="card cambio-card">
             <div class="card-header d-flex justify-content-between align-items-center">
-              <h5>💵 Tipo de Cambio Dólar Blue</h5>
+              <h5>Tipo de Cambio Dólar Blue</h5>
               <span class="tipo-cambio-display">1 USD = {{ tipoCambioUSD }} ARS</span>
             </div>
             <div class="card-body">
@@ -429,7 +436,7 @@ interface Cripto {
                   
                   <div class="cedear-price">{{ cedear.precioARS | currency }}</div>
                   <div class="text-muted small mb-3">
-                    <span [class.positivo]="cedear.variacion >= 0" [class.negativo]="cedear.variacion < 0">
+                    <span [class.text-warning]="cedear.variacion >= 0" [class.negativo]="cedear.variacion < 0">
                       {{ cedear.variacion >= 0 ? '+' : '' }}{{ cedear.variacion | number:'1.2-2' }}%
                     </span>
                     • USD {{ (cedear.precioARS / tipoCambioUSD) | number:'1.2-2' }}
@@ -513,6 +520,48 @@ interface Cripto {
           </div>
         </div>
 
+        <div *ngIf="tabActiva === 'cotizaciones'">
+          <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <h5>Cotizaciones de Dólares (ARS)</h5>
+              <div class="d-flex align-items-center gap-3">
+                <span class="badge bg-info">Fuente: DolarAPI.com</span>
+                <button class="btn btn-sm btn-outline-primary" (click)="cargarDolares()">🔄 Refrescar</button>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="dolar-grid">
+                <div *ngFor="let d of listaDolares" class="dolar-item card-bento p-3 shadow-sm border-0">
+                  <div class="d-flex justify-content-between align-items-start mb-3">
+                    <h6 class="mb-0 text-uppercase font-weight-bold" style="color:var(--apple-blue); font-size: 0.85rem;">{{ d.nombre }}</h6>
+                    <span class="badge bg-light text-dark border-0" style="font-size: 0.6rem; opacity: 0.7;">API</span>
+                  </div>
+                  <div class="row text-center">
+                    <div class="col-6 border-end">
+                      <p class="mb-0 text-muted small" style="font-size: 0.7rem;">Compra</p>
+                      <h4 class="mb-0 text-dark" style="font-size: 1.1rem; font-weight: 700;">{{ d.compra | currency:'ARS':'$':'1.0-0' }}</h4>
+                    </div>
+                    <div class="col-6">
+                      <p class="mb-0 text-muted small" style="font-size: 0.7rem;">Venta</p>
+                      <h4 class="mb-0 text-dark" style="font-size: 1.1rem; font-weight: 700;">{{ d.venta | currency:'ARS':'$':'1.0-0' }}</h4>
+                    </div>
+                  </div>
+                  <div class="mt-3 text-center border-top pt-2">
+                    <small class="text-muted" style="font-size:0.6rem;">Update: {{ d.fechaActualizacion | date:'dd/MM HH:mm' }}</small>
+                  </div>
+                </div>
+              </div>
+              
+              <div *ngIf="listaDolares.length === 0" class="text-center py-5">
+                 <div class="spinner-border text-primary" role="status">
+                   <span class="visually-hidden">Cargando...</span>
+                 </div>
+                 <p class="mt-2 text-muted">Buscando cotizaciones reales...</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
   `
@@ -536,6 +585,8 @@ export class AppComponent implements OnInit {
   nuevaCategoria: string = 'Tech';
   usarDolarManual: boolean = false;
   dolarManualInput: number = 0;
+  fuenteDolar: string = '';
+  listaDolares: any[] = [];
 
   criptos: Cripto[] = [];
   criptosFiltrados: Cripto[] = [];
@@ -619,6 +670,7 @@ export class AppComponent implements OnInit {
       
       // 4. Finalmente cargamos las inversiones y calculamos los reportes con todo listo
       this.cargarInversiones();
+      this.cargarDolares();
       
       console.log('Aplicación sincronizada totalmente con APIs');
     } catch (error) {
@@ -721,6 +773,7 @@ export class AppComponent implements OnInit {
         next: (data) => {
           if (data && data.tipoCambio) {
             this.tipoCambioUSD = data.tipoCambio;
+            this.fuenteDolar = data.fuente || 'API';
             this.guardarTipoCambio();
             this.calcularTodosLosReportes();
             this.actualizarFecha();
@@ -745,6 +798,7 @@ export class AppComponent implements OnInit {
         const data = await response.json();
         if (data && data.venta) {
           this.tipoCambioUSD = Math.round(data.venta);
+          this.fuenteDolar = 'DolarAPI (Direct)';
           this.guardarTipoCambio();
           this.actualizarFecha();
           return this.tipoCambioUSD;
@@ -1103,6 +1157,16 @@ export class AppComponent implements OnInit {
         this.actualizarPreciosYReportes();
       },
       error: (err) => console.error('Error cargando inversiones:', err)
+    });
+  }
+
+  cargarDolares() {
+    this.inversionService.getTodosLosDolares().subscribe({
+      next: (data) => {
+        this.listaDolares = data;
+        console.log('Todas las cotizaciones:', data);
+      },
+      error: (err) => console.error('Error cargando dólares:', err)
     });
   }
 

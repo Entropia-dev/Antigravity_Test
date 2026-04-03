@@ -156,6 +156,10 @@ export class InversionService {
     return this.http.get<any>(`${this.apiUrl}/api/dolar`);
   }
 
+  getTodosLosDolares(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/api/dolares/todos`);
+  }
+
   getCriptoPrecios(): Observable<any[]> {
     return this.http.get<any[]>(`${this.apiUrl}/api/cripto`);
   }

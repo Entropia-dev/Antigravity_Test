@@ -336,10 +336,34 @@ select.form-control {
 }
 
 /* ASSET CARDS (APPLE PRODUCT GRID) */
-.cedear-grid {
+.cedear-grid, .dolar-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 20px;
+}
+
+.dolar-item {
+  background: white;
+  border-radius: 16px;
+  border: 1px solid #e5e5e5;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.dolar-item:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 12px rgba(0,0,0,0.06);
+}
+
+.card-bento {
+  background: #ffffff;
+  padding: 20px;
+  border-radius: 18px;
+  border: 1px solid #f0f0f2;
+}
+
+.font-weight-bold {
+  font-weight: 700;
 }
 
 .cedear-card {
@@ -396,6 +420,30 @@ select.form-control {
   border-radius: 12px !important;
   padding: 12px 24px !important;
   font-weight: 600 !important;
+}
+
+.btn-compr.usd-badge {
+  background-color: rgba(0, 113, 227, 0.1);
+  color: var(--apple-blue);
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 0.75rem;
+}
+
+.badge-fuente {
+  background-color: #f3ba2f !important;
+  color: #111 !important;
+  font-size: 0.65rem;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.precio-input-group {
+  transition: all 0.2s ease;
+  width: 100%;
 }
 
 .btn-comprar {
