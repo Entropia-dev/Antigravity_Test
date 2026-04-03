@@ -87,10 +87,15 @@ export class InversionService {
 
   crearInversion(inversion: Inversion): Observable<Inversion> {
     return new Observable(observer => {
+      const tipoCambio = this.tipoCambioSubject.value;
+      const precioCompraUSD = tipoCambio > 0 ? (inversion.precioCompra / tipoCambio) : 0;
+      
       const nueva: Inversion = {
         ...inversion,
-        id: this.nextId++
+        id: this.nextId++,
+        precioCompraUSD: Math.round(precioCompraUSD * 100) / 100 // Dos decimales
       };
+      
       const listaActual = [...this.inversionesSubject.value, nueva];
       this.inversionesSubject.next(listaActual);
       this.guardarDatos();
@@ -101,12 +106,22 @@ export class InversionService {
 
   actualizarInversion(id: number, inversion: Inversion): Observable<Inversion> {
     return new Observable(observer => {
+      const tipoCambio = this.tipoCambioSubject.value;
+      const precioCompraUSD = tipoCambio > 0 ? (inversion.precioCompra / tipoCambio) : 0;
+      
+      const inversionActualizada = {
+        ...inversion,
+        id,
+        precioCompraUSD: Math.round(precioCompraUSD * 100) / 100
+      };
+      
       const listaActual = this.inversionesSubject.value.map(i => 
-        i.id === id ? { ...inversion, id } : i
+        i.id === id ? inversionActualizada : i
       );
+      
       this.inversionesSubject.next(listaActual);
       this.guardarDatos();
-      observer.next(inversion);
+      observer.next(inversionActualizada);
       observer.complete();
     });
   }

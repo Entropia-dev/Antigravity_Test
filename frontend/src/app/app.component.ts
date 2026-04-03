@@ -224,10 +224,13 @@ interface Cripto {
                       <td>{{ inv.cantidad }}</td>
                       <td>{{ inv.precioCompra | currency }}</td>
                       <td>
-                        <span *ngIf="inv.tipo === 'CEDEAR'" class="usd-badge">
+                        <span class="usd-badge" *ngIf="inv.precioCompraUSD">
+                          USD {{ inv.precioCompraUSD | number:'1.2-2' }}
+                        </span>
+                        <span *ngIf="!inv.precioCompraUSD && inv.tipo === 'CEDEAR'" class="usd-badge">
                           USD {{ getPrecioUSDCedear(inv) | number:'1.2-2' }}
                         </span>
-                        <span *ngIf="inv.tipo !== 'CEDEAR'" class="text-muted">-</span>
+                        <span *ngIf="!inv.precioCompraUSD && inv.tipo !== 'CEDEAR'" class="text-muted">-</span>
                       </td>
                       <td>
                         <div class="precio-input-group" *ngIf="inv.tipo === 'CEDEAR'">

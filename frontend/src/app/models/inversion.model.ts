@@ -4,6 +4,7 @@ export interface Inversion {
   tipo: string;
   cantidad: number;
   precioCompra: number;
+  precioCompraUSD?: number;
   fechaCompra: string;
   observaciones?: string;
   estado?: 'ACTIVA' | 'VENDIDA';
